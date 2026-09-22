@@ -1,16 +1,11 @@
 #!/bin/sh
 set -eu
 
-if [ -z "${SSH_PASSWORD:-}" ] && [ -z "${SSH_AUTHORIZED_KEYS_B64:-}" ]; then
-    printf '%s\n' 'Set SSH_PASSWORD and/or SSH_AUTHORIZED_KEYS_B64.' >&2
-    exit 1
-fi
-
 export SSH_USER=developer
 
-# Dockware requires a password when it creates its custom SSH user.
-# Public-key mode is authenticated by SSHPiper, so use an unknown
-# bootstrap password when no user-facing password was configured.
+# Dockware requires SSH_PWD when it creates the custom SSH user.
+# If no user-facing password is configured, use an unknown random
+# bootstrap password; central SSHPiper key authentication still works.
 if [ -n "${SSH_PASSWORD:-}" ]; then
     export SSH_PWD="$SSH_PASSWORD"
 else
