@@ -18,8 +18,12 @@ RUN go mod edit -replace github.com/tg123/sshpiper=/src/sshpiper \
     && go mod tidy \
     && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/docker-dev .
 
+RUN cd /src/sshpiper/cmd/sshpiperd \
+    && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/sshpiperd .
+
 FROM farmer1992/sshpiperd:full-v1.5.5
 
+COPY --from=build /out/sshpiperd /sshpiperd/sshpiperd
 COPY --from=build /out/docker-dev /sshpiperd/plugins/docker-dev
 
 ENTRYPOINT ["/sshpiperd/sshpiperd"]
