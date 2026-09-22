@@ -12,35 +12,20 @@ fi
 git_user_name="${GIT_USER_NAME:-Aggrosoft Dev Server}"
 git_user_email="${GIT_USER_EMAIL:-dev-server@aggrosoft.de}"
 
-sudo -u developer env HOME=/var/www git config --global user.name "$git_user_name"
-sudo -u developer env HOME=/var/www git config --global user.email "$git_user_email"
+sudo -u developer env HOME=/var/www     git config --global user.name "$git_user_name"
 
-# Keep the account password in sync. In key-only mode replace any old password
-# with a fresh unknown value rather than leaving an earlier configured password active.
+sudo -u developer env HOME=/var/www     git config --global user.email "$git_user_email"
+
+# Keep the Dockware SSH password in sync. In SSHPiper key mode replace
+# any previously configured password with a fresh unknown value.
 if [[ -n ${SSH_PASSWORD:-} ]]; then
     ssh_password="$SSH_PASSWORD"
 else
     ssh_password="$(openssl rand -hex 32)"
 fi
+
 printf 'developer:%s\n' "$ssh_password" | sudo chpasswd
 unset ssh_password
-
-# Install optional authorized_keys into the developer home. This prepares the
-# upstream sshd; public-key routing through SSHPiper also needs proxy-side key mapping.
-ssh_dir=/var/www/.ssh
-authorized_keys="$ssh_dir/authorized_keys"
-managed_marker="$ssh_dir/.aggro-managed-authorized-keys"
-
-if [[ -n ${SSH_AUTHORIZED_KEYS:-} ]]; then
-    sudo install -d -o developer -g www-data -m 0700 "$ssh_dir"
-
-    printf '%s\n' "$SSH_AUTHORIZED_KEYS"         | tr -d '\r'         | sed '/^[[:space:]]*$/d'         | sudo -u developer tee "$authorized_keys" >/dev/null
-
-    sudo -u developer touch "$managed_marker"
-    sudo chmod 0600 "$authorized_keys" "$managed_marker"
-elif [[ -f "$managed_marker" ]]; then
-    sudo rm -f "$authorized_keys" "$managed_marker"
-fi
 
 github_dir="$HOME/.config/aggro-github"
 
@@ -61,14 +46,16 @@ if [[ -n ${GITHUB_APP_CLIENT_ID:-}     || -n ${GITHUB_APP_INSTALLATION_ID:-}    
 
     sudo chmod 0600         "$github_dir/client-id"         "$github_dir/installation-id"         "$github_dir/private-key.pem"
 
-    sudo -u developer env HOME=/var/www git config --global credential.helper ''
-    sudo -u developer env HOME=/var/www git config --global --add         credential.helper         /opt/aggro/github-app-credential.sh
+    sudo -u developer env HOME=/var/www         git config --global credential.helper ''
+
+    sudo -u developer env HOME=/var/www         git config --global --add         credential.helper         /opt/aggro/github-app-credential.sh
 fi
 
 # Clone development repositories listed one owner/repo per line.
 if [[ -n ${DEV_PLUGINS:-} ]]; then
     if [[ ! -s "$github_dir/client-id"         || ! -s "$github_dir/installation-id"         || ! -s "$github_dir/private-key.pem" ]]; then
-        printf '%s\n' 'DEV_PLUGINS is configured but GitHub App credentials are missing.' >&2
+
+        printf '%s\n'             'DEV_PLUGINS is configured but GitHub App credentials are missing.' >&2
         exit 1
     fi
 
@@ -96,7 +83,7 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
             [[ -d "$plugin_dir/.git" ]] || continue
 
             origin="$(
-                sudo -u developer env HOME=/var/www                     git -C "$plugin_dir" remote get-url origin 2>/dev/null || true
+                sudo -u developer env HOME=/var/www                     git -C "$plugin_dir"                     remote get-url origin 2>/dev/null || true
             )"
 
             if [[ "$origin" == "$url" || "$origin" == "git@github.com:$repo.git" ]]; then
@@ -114,7 +101,7 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
         sudo rm -rf "$tmp"
 
         printf 'Cloning dev plugin: %s\n' "$repo"
-        sudo -u developer env HOME=/var/www git clone "$url" "$tmp"
+        sudo -u developer env HOME=/var/www             git clone "$url" "$tmp"
 
         # Empty repositories keep the repository name. Existing Shopware
         # plugins use the configured plugin class name.
@@ -141,7 +128,7 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
         target="$plugins_dir/$target_name"
 
         if [[ -e "$target" ]]; then
-            printf 'Cannot clone %s: target already exists: %s\n' "$repo" "$target" >&2
+            printf 'Cannot clone %s: target already exists: %s\n'                 "$repo" "$target" >&2
             sudo rm -rf "$tmp"
             exit 1
         fi
