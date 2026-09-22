@@ -41,7 +41,6 @@ services:
       - dev_runtime:/opt/aggro:ro
       - shopware_html:/var/www/html
       - shopware_db:/var/lib/mysql
-      - codex_home:/var/www/.codex
 
     configs:
       - source: shopware_reverse_proxy
@@ -71,4 +70,3 @@ volumes:
   dev_runtime:
   shopware_html:
   shopware_db:
-  codex_home:
