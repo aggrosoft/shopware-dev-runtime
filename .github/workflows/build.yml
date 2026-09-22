@@ -70,4 +70,4 @@ jobs:
           docker run --rm \
             --entrypoint /bin/sh \
             ghcr.io/aggrosoft/shopware-dev-runtime:main \
-            -c 'test -x /runtime/dockware-entrypoint.sh && test -x /runtime/dev-provision.sh'
+            -c 'test -x /runtime/dockware-entrypoint.sh && test -x /runtime/dev-provision.sh && test -x /runtime/bin/shopware-cli && /runtime/bin/shopware-cli --version'
