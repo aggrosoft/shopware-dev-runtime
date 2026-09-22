@@ -63,6 +63,8 @@ services:
       - dev_runtime:/opt/aggro:ro
       - shopware_html:/var/www/html
       - shopware_db:/var/lib/mysql
+      - vscode_server:/var/www/.vscode-server
+      - codex_home:/var/www/.codex
 
     configs:
       - source: shopware_reverse_proxy
@@ -92,3 +94,5 @@ volumes:
   dev_runtime:
   shopware_html:
   shopware_db:
+  vscode_server:
+  codex_home:
