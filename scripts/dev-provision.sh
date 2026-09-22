@@ -3,6 +3,16 @@ set -euo pipefail
 
 export HOME=/var/www
 
+# SSHPiper's Docker exec bridge implements direct-tcpip forwarding with nc.
+# VS Code Remote SSH needs this for its remote server tunnel.
+if ! command -v nc >/dev/null 2>&1; then
+    printf '%s\n' 'Installing netcat-openbsd for SSH port forwarding...'
+    sudo apt-get update
+    sudo env DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y --no-install-recommends netcat-openbsd
+    sudo rm -rf /var/lib/apt/lists/*
+fi
+
 if ! id developer >/dev/null 2>&1; then
     printf '%s\n' 'Expected Dockware SSH user "developer" does not exist.' >&2
     exit 1
