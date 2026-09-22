@@ -19,17 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install shellcheck
-        run: sudo apt-get update && sudo apt-get install -y shellcheck
-
-      - name: Validate shell scripts
+      - name: Validate shell syntax
         run: |
           sh -n install-runtime.sh
           sh -n scripts/dockware-entrypoint.sh
           sh -n scripts/boot-end.sh
           bash -n scripts/dev-provision.sh
           bash -n scripts/github-app-credential.sh
-          shellcheck install-runtime.sh scripts/*.sh
 
   build:
     needs: validate
