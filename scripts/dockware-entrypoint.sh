@@ -16,5 +16,7 @@ fi
 export BASH_ENV=/dev/null
 
 sudo ln -sf /opt/aggro/boot-end.sh /var/www/boot_end.sh
+sudo ln -sf /opt/aggro/bin/shopware-cli /usr/local/bin/shopware-cli
+sudo ln -sf /opt/aggro/bin/shopware-cli /usr/local/bin/swx
 
 exec /bin/bash /entrypoint.sh "$@"
