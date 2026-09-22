@@ -3,6 +3,11 @@ set -euo pipefail
 
 export HOME=/var/www
 
+# Persistent remote-development state is mounted here by the Coolify template.
+# Ensure fresh named volumes are writable by the Dockware developer user.
+sudo install -d -o developer -g www-data -m 0775 /var/www/.vscode-server
+sudo install -d -o developer -g www-data -m 0700 /var/www/.codex
+
 # Provide Codex in the remote VS Code host with a headless browser.
 # System-level Codex configuration is lower priority than user/project config,
 # so developers can override or disable it if needed.
