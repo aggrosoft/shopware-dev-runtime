@@ -26,7 +26,6 @@ jobs:
           sh -n scripts/boot-end.sh
           bash -n scripts/dev-provision.sh
           bash -n scripts/github-app-credential.sh
-          bash -n scripts/nc
 
   build:
     needs: validate
@@ -68,4 +67,7 @@ jobs:
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           docker pull ghcr.io/aggrosoft/shopware-dev-runtime:main
-          docker run --rm             --entrypoint /bin/sh             ghcr.io/aggrosoft/shopware-dev-runtime:main             -c 'test -x /runtime/nc && test -x /runtime/dockware-entrypoint.sh'
+          docker run --rm \
+            --entrypoint /bin/sh \
+            ghcr.io/aggrosoft/shopware-dev-runtime:main \
+            -c 'test -x /runtime/dockware-entrypoint.sh && test -x /runtime/dev-provision.sh'
