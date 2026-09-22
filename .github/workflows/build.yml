@@ -26,6 +26,7 @@ jobs:
           sh -n scripts/boot-end.sh
           bash -n scripts/dev-provision.sh
           bash -n scripts/github-app-credential.sh
+          php -l scripts/ensure-internal-sales-channel-domains.php
 
   build:
     needs: validate

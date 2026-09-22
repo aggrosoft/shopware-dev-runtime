@@ -228,3 +228,29 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
         printf 'Dev plugin ready: %s -> %s\n' "$repo" "$target"
     done <<< "$DEV_PLUGINS"
 fi
+
+
+# Mirror the public sales-channel domains onto the internal Docker service
+# hostname so browser smoke tests can bypass the external Authentik/Traefik
+# route without losing Shopware's host-sensitive sales-channel context.
+external_storefront_url="${APP_URL:-}"
+if [[ ! "$external_storefront_url" =~ ^https?:// ]]; then
+    : "${SHOP_DOMAIN:?SHOP_DOMAIN is required to provision internal storefront domains}"
+    external_storefront_url="https://$SHOP_DOMAIN"
+fi
+
+internal_storefront_origin="${INTERNAL_STOREFRONT_ORIGIN:-http://shop}"
+domain_output="$(
+    php /opt/aggro/ensure-internal-sales-channel-domains.php \
+        /var/www/html \
+        "$external_storefront_url" \
+        "$internal_storefront_origin"
+)"
+printf '%s\n' "$domain_output"
+
+if grep -q '^Added internal sales-channel domain:' <<< "$domain_output"; then
+    (
+        cd /var/www/html
+        bin/console cache:clear
+    )
+fi

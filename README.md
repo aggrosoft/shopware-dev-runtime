@@ -12,6 +12,7 @@ The runtime handles development plumbing only:
 - keep an optional SSH password in sync
 - configure the default Git identity
 - provide Shopware CLI as the standard extension validation/build tool
+- mirror public sales-channel domains onto the internal `http://shop` origin for authenticated-gateway-free browser smoke tests
 - configure GitHub App credentials for HTTPS Git operations
 - clone repositories listed in `DEV_PLUGINS` into `custom/plugins`
 - leave existing Git working copies untouched on restart
