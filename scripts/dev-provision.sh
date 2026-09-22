@@ -3,6 +3,24 @@ set -euo pipefail
 
 export HOME=/var/www
 
+# Seed editable workspace instructions once. The backing file lives inside
+# the persistent Shopware volume; /var/www/AGENTS.md is only a convenient
+# workspace-level symlink and is recreated when the container is recreated.
+agent_dir=/var/www/html/.aggro-dev
+agent_file="$agent_dir/AGENTS.md"
+agent_link=/var/www/AGENTS.md
+
+sudo install -d -o developer -g www-data -m 0775 "$agent_dir"
+
+if [[ ! -e "$agent_file" ]]; then
+    sudo -u developer cp /opt/aggro/templates/AGENTS.md "$agent_file"
+    sudo chmod 0664 "$agent_file"
+fi
+
+if [[ ! -e "$agent_link" && ! -L "$agent_link" ]]; then
+    sudo ln -s "$agent_file" "$agent_link"
+fi
+
 # SSHPiper's Docker exec bridge implements direct-tcpip forwarding with nc.
 # VS Code Remote SSH needs this for its remote server tunnel.
 if ! command -v nc >/dev/null 2>&1; then
