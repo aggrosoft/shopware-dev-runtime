@@ -58,10 +58,12 @@ You may edit and extend it for this development instance.
 ## Validation
 
 - Do not stop after editing code.
-- Run the relevant existing tests, static analysis and checks that are actually configured by the plugin or project.
-- Do not install or invent PHPStan, Psalm or other analysis tooling merely because this document mentions static analysis. If the plugin has no configured static-analysis tool, state that instead of treating it as a failure.
+- Run the relevant existing tests, static analysis and checks configured by the plugin or project.
+- `shopware-cli` is installed globally in this environment and is the default Shopware extension quality/build tool.
+- For PHP plugin development, static analysis is expected. Unless the plugin provides a more specific established workflow, run `shopware-cli extension validate --full <plugin-path>`; this includes PHPStan and the other applicable Shopware extension checks.
+- If the plugin provides its own Composer/npm test, lint or static-analysis scripts, run those as well and prefer the repository's configuration over inventing a parallel one.
 - Test the change in this running Shopware instance whenever practical.
-- Build the plugin after relevant changes and fix build errors caused by your work.
+- Build the plugin after relevant changes and fix build errors caused by your work. Unless the repository defines a more specific build command, use `shopware-cli extension build <plugin-path>` for extension assets.
 - For Administration or Storefront changes, run the relevant Administration/Storefront or plugin asset build rather than assuming source changes compile.
 - Use Shopware lifecycle commands such as `plugin:refresh`, cache clearing, theme compilation or asset installation only when relevant to the change.
 - Before declaring the task complete, state which tests/builds/checks were run and whether they passed. If something could not be tested, say what and why.
