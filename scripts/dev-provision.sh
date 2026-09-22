@@ -3,6 +3,15 @@ set -euo pipefail
 
 export HOME=/var/www
 
+# Provide Codex in the remote VS Code host with a headless browser.
+# System-level Codex configuration is lower priority than user/project config,
+# so developers can override or disable it if needed.
+sudo install -d -m 0755 /etc/codex
+sudo tee /etc/codex/config.toml >/dev/null <<'EOF'
+[mcp_servers.playwright]
+url = "http://browser:8931/mcp"
+EOF
+
 # Seed editable workspace instructions once. The backing file lives inside
 # the persistent Shopware volume; /var/www/AGENTS.md is only a convenient
 # workspace-level symlink and is recreated when the container is recreated.
