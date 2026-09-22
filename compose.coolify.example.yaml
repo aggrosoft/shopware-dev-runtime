@@ -1,6 +1,7 @@
 services:
   runtime:
     image: ghcr.io/aggrosoft/shopware-dev-runtime:main
+    pull_policy: always
     restart: "no"
 
     volumes:
