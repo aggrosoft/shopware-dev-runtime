@@ -1,3 +1,3 @@
 module github.com/aggrosoft/shopware-dev-runtime/sshpiper-plugin
 
-go 1.24.0
+go 1.27.0
