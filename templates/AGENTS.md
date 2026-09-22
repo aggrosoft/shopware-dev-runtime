@@ -47,10 +47,19 @@ You may edit and extend it for this development instance.
 - Reuse current Shopware terminology and interaction patterns so users do not have to learn plugin-specific UI conventions for ordinary Administration tasks.
 - When Shopware changes or deprecates Administration components between supported versions, use the conventions appropriate for the installed and supported Shopware version rather than copying outdated patterns.
 
+## Browser smoke tests
+
+- A headless Chromium browser is available through the Playwright MCP server named `playwright`.
+- Use it for relevant storefront and Administration smoke tests, navigation checks and visual verification instead of relying only on HTTP requests or source inspection.
+- Use the current shop URL from `$SHOP_DOMAIN` / `$SERVICE_FQDN_SHOP`.
+- For UI changes, check the affected page in the browser and look for obvious JavaScript console errors, failed navigation, broken layout and unusable interactions.
+- Keep browser tests focused on the change; do not perform destructive business actions unless the task requires them.
+
 ## Validation
 
 - Do not stop after editing code.
-- Run the relevant existing tests, static analysis and checks for the plugin.
+- Run the relevant existing tests, static analysis and checks that are actually configured by the plugin or project.
+- Do not install or invent PHPStan, Psalm or other analysis tooling merely because this document mentions static analysis. If the plugin has no configured static-analysis tool, state that instead of treating it as a failure.
 - Test the change in this running Shopware instance whenever practical.
 - Build the plugin after relevant changes and fix build errors caused by your work.
 - For Administration or Storefront changes, run the relevant Administration/Storefront or plugin asset build rather than assuming source changes compile.
