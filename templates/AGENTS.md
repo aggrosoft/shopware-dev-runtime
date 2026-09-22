@@ -12,7 +12,9 @@ You may edit and extend it for this development instance.
 - Runtime helper scripts: `/opt/aggro`.
 - Git configuration: `/var/www/.gitconfig`.
 - GitHub App runtime data: `/var/www/.config/aggro-github`.
-- The current shop hostname is available in `$SHOP_DOMAIN` and `$SERVICE_FQDN_SHOP`.
+- The current shop hostname is available in `$SHOP_DOMAIN` and `$SERVICE_FQDN_SHOP`. These values describe the shell/container environment and are not automatically valid from the separate Playwright browser container.
+- The internal Compose service name for Shopware is `shop`; browser-based checks should normally use `http://shop` as the stable internal base URL.
+- The disposable Dockware Administration uses the default development credentials `admin` / `shopware` unless the instance was explicitly changed.
 - Run Shopware CLI commands from `/var/www/html`, for example `bin/console ...`.
 - PHP, Node.js, the database and the running Shopware installation are already available inside this environment.
 - Do not add Docker wrappers or create a parallel local environment unless explicitly requested.
@@ -46,15 +48,32 @@ You may edit and extend it for this development instance.
 - Custom styling is acceptable only where the standard Administration components cannot express the required UI. Keep such styling minimal and visually consistent with Shopware.
 - Reuse current Shopware terminology and interaction patterns so users do not have to learn plugin-specific UI conventions for ordinary Administration tasks.
 - When Shopware changes or deprecates Administration components between supported versions, use the conventions appropriate for the installed and supported Shopware version rather than copying outdated patterns.
+- Inspect the installed Shopware version and comparable core screens before choosing Administration components. On Shopware 6.7, prefer the current Meteor-based `mt-*` components where Shopware core uses them rather than older deprecated component APIs.
+- Do not add redundant explicit imports for Administration snippets that Shopware already auto-discovers. Follow the loading pattern used by comparable core modules and let the validator guide compatibility.
+- When using `sw-page`, keep dialogs/modals inside the rendered `#content` area unless the core pattern for that screen requires something else; definitions outside rendered slots may never mount.
+- For `mt-card`, use the intended slots such as `#toolbar` and `#grid` for search/actions and tabular content when applicable so the result matches native Shopware screen structure.
 
 ## Browser smoke tests
 
 - A headless Chromium browser is available through the Playwright MCP server named `playwright`.
+- Playwright tools may be lazy-loaded and not appear in the initial tool list. Before concluding that browser testing is unavailable, search the available tool registry for `playwright` / `mcp__playwright__`.
 - Use it for relevant storefront and Administration smoke tests, navigation checks and visual verification instead of relying only on HTTP requests or source inspection.
-- Use the current shop URL from `$SHOP_DOMAIN` / `$SERVICE_FQDN_SHOP`.
+- The Playwright browser runs in a separate container/network context. Do not assume that `localhost` or `$SHOP_DOMAIN=localhost` points to Shopware from the browser.
+- Prefer the stable internal Compose URL `http://shop` for Playwright smoke tests. Use `$SERVICE_FQDN_SHOP` when an external/public-path check is specifically useful and reachable.
+- If internal service DNS unexpectedly fails, determine the current Shopware container IPv4 address at runtime (for example via `hostname -I`) and use it only as a temporary fallback. Never hard-code a container IP because it can change after recreate/restart.
+- For Administration smoke tests, the disposable Dockware credentials are normally `admin` / `shopware` unless explicitly changed for the instance.
 - For UI changes, check the affected page in the browser and look for obvious JavaScript console errors, failed navigation, broken layout and unusable interactions.
+- After rebuilding Administration assets, perform a cache-disabled reload before judging the result so an old plugin bundle is not mistaken for the current build.
+- The Symfony debug toolbar may overlap the bottom edge of Administration screenshots in this development environment; do not report that overlap as a plugin UI defect.
 - Keep browser tests focused on the change; do not perform destructive business actions unless the task requires them.
 - Treat an unavailable Playwright MCP server as an environment problem. Do not present API-only checks as an equivalent substitute for a requested or relevant visual smoke test.
+
+## PHPUnit in plugin repositories
+
+- Custom plugin repositories normally reuse the Shopware root Composer installation and may not have their own `vendor/` directory.
+- Unless a plugin-local PHPUnit executable actually exists or the repository explicitly documents another workflow, run PHPUnit from `/var/www/html`, for example: `bin/phpunit -c custom/plugins/<Plugin>/phpunit.xml.dist`.
+- From a plugin directory, `../../../bin/phpunit -c phpunit.xml.dist` is also valid when the relative path matches the standard `custom/plugins/<Plugin>` layout.
+- Do not assume `<plugin>/vendor/bin/phpunit` exists and do not run a separate `composer install` inside a plugin merely to obtain PHPUnit.
 
 ## Validation
 
@@ -67,6 +86,7 @@ You may edit and extend it for this development instance.
 - Build the plugin after relevant changes and fix build errors caused by your work. Unless the repository defines a more specific build command, use `shopware-cli extension build <plugin-path>` for extension assets.
 - For Administration or Storefront changes, run the relevant Administration/Storefront or plugin asset build rather than assuming source changes compile.
 - Use Shopware lifecycle commands such as `plugin:refresh`, cache clearing, theme compilation or asset installation only when relevant to the change.
+- When validation already reports findings before or outside the changed area, distinguish the existing baseline from regressions introduced by the task. Do not claim unrelated pre-existing validator findings were caused by the current change.
 - Before declaring the task complete, state which tests/builds/checks were run and whether they passed. If something could not be tested, say what and why.
 
 ## Git workflow
