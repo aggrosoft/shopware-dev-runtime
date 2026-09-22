@@ -1,4 +1,4 @@
-FROM golang:1.24-bookworm AS build
+FROM golang:1.27-bookworm AS build
 
 ARG SSHPIPER_REF=8dcd83f688ed9c382e7a0589f650aa9a7fec93dd
 
