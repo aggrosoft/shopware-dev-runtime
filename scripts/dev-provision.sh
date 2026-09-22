@@ -27,6 +27,26 @@ fi
 printf 'developer:%s\n' "$ssh_password" | sudo chpasswd
 unset ssh_password
 
+# Allow SSHPiper to map centrally trusted developer keys to the local
+# Dockware developer account using one infrastructure mapping key.
+mapping_public_key=/etc/aggro/sshpiper_upstream_key.pub
+
+if [[ -s "$mapping_public_key" ]]; then
+    ssh_dir=/var/www/.ssh
+    authorized_keys="$ssh_dir/authorized_keys"
+
+    sudo install -d -o developer -g www-data -m 0700 "$ssh_dir"
+    sudo touch "$authorized_keys"
+    sudo chown developer:www-data "$authorized_keys"
+    sudo chmod 0600 "$authorized_keys"
+
+    mapping_key="$(tr -d '\r' < "$mapping_public_key" | head -n 1)"
+
+    if [[ -n "$mapping_key" ]] && ! sudo -u developer grep -qxF "$mapping_key" "$authorized_keys"; then
+        printf '%s\n' "$mapping_key"             | sudo -u developer tee -a "$authorized_keys" >/dev/null
+    fi
+fi
+
 github_dir="$HOME/.config/aggro-github"
 
 # Configure GitHub App authentication if any app setting is present.
