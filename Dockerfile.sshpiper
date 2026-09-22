@@ -1,0 +1,26 @@
+FROM golang:1.24-bookworm AS build
+
+ARG SSHPIPER_REF=master
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+
+RUN git clone --depth 1 --branch "$SSHPIPER_REF" https://github.com/tg123/sshpiper.git /src/sshpiper
+
+WORKDIR /src/plugin
+COPY sshpiper-plugin/go.mod ./
+COPY sshpiper-plugin/main.go ./
+
+RUN go mod edit -replace github.com/tg123/sshpiper=/src/sshpiper \
+    && go mod tidy \
+    && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/docker-dev .
+
+FROM farmer1992/sshpiperd:full-v1.5.5
+
+COPY --from=build /out/docker-dev /sshpiperd/plugins/docker-dev
+
+ENTRYPOINT ["/sshpiperd/sshpiperd"]
+CMD ["-port", "2222", "/sshpiperd/plugins/docker-dev"]
