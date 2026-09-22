@@ -1,14 +1,14 @@
 FROM golang:1.24-bookworm AS build
 
-ARG SSHPIPER_REF=master
+ARG SSHPIPER_REF=8dcd83f688ed9c382e7a0589f650aa9a7fec93dd
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /src
-
-RUN git clone --depth 1 --branch "$SSHPIPER_REF" https://github.com/tg123/sshpiper.git /src/sshpiper
+RUN git clone https://github.com/tg123/sshpiper.git /src/sshpiper \
+    && cd /src/sshpiper \
+    && git checkout "$SSHPIPER_REF"
 
 WORKDIR /src/plugin
 COPY sshpiper-plugin/go.mod ./
