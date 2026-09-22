@@ -1,0 +1,71 @@
+services:
+  runtime:
+    image: ghcr.io/aggrosoft/shopware-dev-runtime:main
+    restart: "no"
+    volumes:
+      - dev_runtime:/target
+
+  shop:
+    image: 'dockware/shopware:${SHOPWARE_VERSION:-latest}'
+    restart: unless-stopped
+
+    depends_on:
+      runtime:
+        condition: service_completed_successfully
+
+    entrypoint:
+      - /bin/sh
+      - /opt/aggro/dockware-entrypoint.sh
+
+    environment:
+      SERVICE_URL_SHOP_80: /
+      SERVICE_FQDN_SHOP: null
+
+      APP_URL: '${SERVICE_URL_SHOP_80}'
+      SHOP_DOMAIN: '${SERVICE_FQDN_SHOP}'
+
+      SSH_PASSWORD: '${SSH_PASSWORD:-}'
+      SSH_AUTHORIZED_KEYS_B64: '${SSH_AUTHORIZED_KEYS_B64:-}'
+
+      GITHUB_APP_CLIENT_ID: '${GITHUB_APP_CLIENT_ID:-}'
+      GITHUB_APP_INSTALLATION_ID: '${GITHUB_APP_INSTALLATION_ID:-}'
+      GITHUB_APP_PRIVATE_KEY: '${GITHUB_APP_PRIVATE_KEY:-}'
+
+      DEV_PLUGINS: '${DEV_PLUGINS:-}'
+
+      GIT_USER_NAME: '${GIT_USER_NAME:-Aggrosoft Dev Server}'
+      GIT_USER_EMAIL: '${GIT_USER_EMAIL:-dev-server@aggrosoft.de}'
+
+    volumes:
+      - dev_runtime:/opt/aggro:ro
+      - shopware_html:/var/www/html
+      - shopware_db:/var/lib/mysql
+
+    configs:
+      - source: shopware_reverse_proxy
+        target: /var/www/html/config/packages/z-framework.yaml
+
+    labels:
+      - 'sshpiper.username=${SERVICE_FQDN_SHOP}'
+      - 'sshpiper.container_username=developer'
+      - 'sshpiper.port=22'
+      - 'sshpiper.network=${COMPOSE_PROJECT_NAME}'
+      - 'sshpiper.authorized_keys=${SSH_AUTHORIZED_KEYS_B64:-}'
+      - 'sshpiper.docker_exec_cmd=${SSH_AUTHORIZED_KEYS_B64:+true}'
+      - 'sshpiper.docker_sshd_cmd=/bin/bash'
+
+
+configs:
+  shopware_reverse_proxy:
+    content: |
+      framework:
+        trusted_proxies: 'REMOTE_ADDR'
+        trusted_headers:
+          - 'x-forwarded-proto'
+          - 'x-forwarded-port'
+
+
+volumes:
+  dev_runtime:
+  shopware_html:
+  shopware_db:
