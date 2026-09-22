@@ -8,6 +8,24 @@ services:
       - dev_runtime:/target
 
 
+  browser:
+    image: mcr.microsoft.com/playwright/mcp:latest
+    restart: unless-stopped
+    init: true
+    entrypoint:
+      - node
+      - /app/cli.js
+    command:
+      - --headless
+      - --browser
+      - chromium
+      - --no-sandbox
+      - --port
+      - "8931"
+      - --host
+      - 0.0.0.0
+
+
   shop:
     image: 'dockware/shopware:${SHOPWARE_VERSION:-latest}'
     restart: unless-stopped
