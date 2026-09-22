@@ -16,5 +16,6 @@ fi
 export BASH_ENV=/dev/null
 
 sudo ln -sf /opt/aggro/boot-end.sh /var/www/boot_end.sh
+sudo ln -sf /opt/aggro/bin/codex /usr/local/bin/codex
 
 exec /bin/bash /entrypoint.sh "$@"
