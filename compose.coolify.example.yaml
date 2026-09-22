@@ -12,6 +12,13 @@ services:
     image: mcr.microsoft.com/playwright/mcp:latest
     restart: unless-stopped
     init: true
+
+    # Route the public shop hostname back through the Docker host so browser
+    # smoke tests hit Coolify/Traefik with the real Host/SNI instead of the
+    # internal "shop" hostname. This is required for storefront sales-channel
+    # domain matching and also avoids unusable public IPv6 routes.
+    extra_hosts:
+      - '${SERVICE_FQDN_SHOP}:host-gateway'
     entrypoint:
       - node
       - /app/cli.js
