@@ -18,6 +18,14 @@ if ! id developer >/dev/null 2>&1; then
     exit 1
 fi
 
+# Dockware maps the developer user to UID 33, which is also www-data.
+# VS Code Remote resolves the login shell for UID 33 via the first passwd
+# entry and otherwise gets /usr/sbin/nologin. These are disposable dev
+# containers, so make UID 33 usable as an interactive shell.
+if [[ "$(getent passwd www-data | cut -d: -f7)" != "/bin/bash" ]]; then
+    sudo usermod -s /bin/bash www-data
+fi
+
 # Git identity. Per-instance environment variables can override the defaults.
 git_user_name="${GIT_USER_NAME:-Aggrosoft Dev Server}"
 git_user_email="${GIT_USER_EMAIL:-dev-server@aggrosoft.de}"
