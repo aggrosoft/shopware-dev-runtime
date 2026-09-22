@@ -35,6 +35,18 @@ You may edit and extend it for this development instance.
 - Do not add unnecessary backwards compatibility for unsupported old Shopware versions.
 - If requirements are ambiguous, inspect the existing implementation first. Ask before making a materially different product or architecture decision when the correct choice cannot be inferred safely.
 
+## Administration UI
+
+- Administration screens should look and behave like native Shopware Administration screens, not like a separate custom application embedded inside Shopware.
+- Use Shopware's standard Administration components whenever a suitable component exists. Prefer the components and patterns provided by the installed Shopware version over custom replacements.
+- Before designing a new Administration screen or interaction, inspect comparable Shopware core screens and existing Aggrosoft Administration modules and follow their established structure.
+- Use the standard Shopware page structure, containers, cards, tabs, form fields, grids, empty states, modals, notifications, loading states and action areas whenever applicable.
+- Keep spacing, hierarchy, labels, button placement, tab behavior and responsive layout consistent with surrounding Shopware Administration screens.
+- Do not introduce custom layout systems, bespoke containers or unnecessary CSS when the same result can be achieved with Shopware's standard components and layout primitives.
+- Custom styling is acceptable only where the standard Administration components cannot express the required UI. Keep such styling minimal and visually consistent with Shopware.
+- Reuse current Shopware terminology and interaction patterns so users do not have to learn plugin-specific UI conventions for ordinary Administration tasks.
+- When Shopware changes or deprecates Administration components between supported versions, use the conventions appropriate for the installed and supported Shopware version rather than copying outdated patterns.
+
 ## Validation
 
 - Do not stop after editing code.
