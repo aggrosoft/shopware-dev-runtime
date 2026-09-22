@@ -54,6 +54,7 @@ You may edit and extend it for this development instance.
 - Use the current shop URL from `$SHOP_DOMAIN` / `$SERVICE_FQDN_SHOP`.
 - For UI changes, check the affected page in the browser and look for obvious JavaScript console errors, failed navigation, broken layout and unusable interactions.
 - Keep browser tests focused on the change; do not perform destructive business actions unless the task requires them.
+- Treat an unavailable Playwright MCP server as an environment problem. Do not present API-only checks as an equivalent substitute for a requested or relevant visual smoke test.
 
 ## Validation
 
