@@ -13,7 +13,7 @@ You may edit and extend it for this development instance.
 - Git configuration: `/var/www/.gitconfig`.
 - GitHub App runtime data: `/var/www/.config/aggro-github`.
 - The current shop hostname is available in `$SHOP_DOMAIN` and `$SERVICE_FQDN_SHOP`. These values describe the shell/container environment and are not automatically valid from the separate Playwright browser container.
-- The internal Compose service name for Shopware is `shop`; browser-based checks should normally use `http://shop` as the stable internal base URL.
+- The internal Compose service name for Shopware is `shop`. `http://shop` is useful for host-agnostic Administration/backend checks, but it is not a valid substitute for Storefront testing because Shopware Storefront routing depends on the configured sales-channel domain, scheme and host.
 - The disposable Dockware Administration uses the default development credentials `admin` / `shopware` unless the instance was explicitly changed.
 - Run Shopware CLI commands from `/var/www/html`, for example `bin/console ...`.
 - PHP, Node.js, the database and the running Shopware installation are already available inside this environment.
@@ -59,8 +59,12 @@ You may edit and extend it for this development instance.
 - Playwright tools may be lazy-loaded and not appear in the initial tool list. Before concluding that browser testing is unavailable, search the available tool registry for `playwright` / `mcp__playwright__`.
 - Use it for relevant storefront and Administration smoke tests, navigation checks and visual verification instead of relying only on HTTP requests or source inspection.
 - The Playwright browser runs in a separate container/network context. Do not assume that `localhost` or `$SHOP_DOMAIN=localhost` points to Shopware from the browser.
-- Prefer the stable internal Compose URL `http://shop` for Playwright smoke tests. Use `$SERVICE_FQDN_SHOP` when an external/public-path check is specifically useful and reachable.
-- If internal service DNS unexpectedly fails, determine the current Shopware container IPv4 address at runtime (for example via `hostname -I`) and use it only as a temporary fallback. Never hard-code a container IP because it can change after recreate/restart.
+- For Administration checks, `http://shop/admin` is usually the simplest stable internal URL.
+- For Storefront checks, use the actual configured sales-channel URL, normally `https://$SERVICE_FQDN_SHOP`. Do not validate Storefront behavior against `http://shop`: the wrong host/scheme can bypass or break sales-channel-domain matching, redirects, cookies, absolute URLs and other host-sensitive behavior.
+- The browser container maps `$SERVICE_FQDN_SHOP` to the Docker host gateway so HTTPS requests go back through Coolify/Traefik with the real hostname and TLS/SNI while avoiding an unusable public IPv6 route.
+- If the shop has multiple sales-channel domains, inspect the running Shopware configuration and test the domain relevant to the task rather than assuming `$SERVICE_FQDN_SHOP` is the only Storefront URL.
+- If the public Storefront hostname is unexpectedly unreachable, treat that as an environment/network problem. Do not silently fall back to `http://shop` for Storefront validation.
+- If internal service DNS unexpectedly fails for an Administration-only check, determine the current Shopware container IPv4 address at runtime (for example via `hostname -I`) and use it only as a temporary fallback. Never hard-code a container IP because it can change after recreate/restart.
 - For Administration smoke tests, the disposable Dockware credentials are normally `admin` / `shopware` unless explicitly changed for the instance.
 - For UI changes, check the affected page in the browser and look for obvious JavaScript console errors, failed navigation, broken layout and unusable interactions.
 - After rebuilding Administration assets, perform a cache-disabled reload before judging the result so an old plugin bundle is not mistaken for the current build.
