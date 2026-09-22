@@ -2,8 +2,10 @@ services:
   runtime:
     image: ghcr.io/aggrosoft/shopware-dev-runtime:main
     restart: "no"
+
     volumes:
       - dev_runtime:/target
+
 
   shop:
     image: 'dockware/shopware:${SHOPWARE_VERSION:-latest}'
@@ -25,7 +27,6 @@ services:
       SHOP_DOMAIN: '${SERVICE_FQDN_SHOP}'
 
       SSH_PASSWORD: '${SSH_PASSWORD:-}'
-      SSH_AUTHORIZED_KEYS_B64: '${SSH_AUTHORIZED_KEYS_B64:-}'
 
       GITHUB_APP_CLIENT_ID: '${GITHUB_APP_CLIENT_ID:-}'
       GITHUB_APP_INSTALLATION_ID: '${GITHUB_APP_INSTALLATION_ID:-}'
