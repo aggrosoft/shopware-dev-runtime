@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strings"
 
 	"github.com/moby/moby/api/types/network"
 	"github.com/moby/moby/client"
@@ -19,7 +18,6 @@ const (
 	labelContainerUsername = "sshpiper.container_username"
 	labelPort              = "sshpiper.port"
 	labelNetwork           = "sshpiper.network"
-	labelDevKeys           = "sshpiper.dev_keys"
 
 	defaultAuthorizedKeys = "/etc/sshpiper/dev_authorized_keys"
 	defaultPrivateKey     = "/etc/sshpiper/dev_upstream_key"
@@ -29,7 +27,6 @@ type pipe struct {
 	ClientUsername    string
 	ContainerUsername string
 	Host              string
-	DevKeys           bool
 }
 
 type dockerRouter struct {
@@ -95,9 +92,7 @@ func (w *pipeWrapper) From() []skel.SkelPipeFrom {
 		&fromPassword{fromBase: base},
 	}
 
-	if w.pipe.DevKeys {
-		methods = append(methods, &fromPublicKey{fromBase: base})
-	}
+	methods = append(methods, &fromPublicKey{fromBase: base})
 
 	return methods
 }
@@ -111,7 +106,7 @@ func (f *fromPassword) MatchConn(conn libplugin.ConnMetadata) (skel.SkelPipeTo, 
 }
 
 func (f *fromPublicKey) MatchConn(conn libplugin.ConnMetadata) (skel.SkelPipeTo, error) {
-	if !f.pipe.DevKeys || !f.matches(conn) {
+	if !f.matches(conn) {
 		return nil, nil
 	}
 
@@ -202,7 +197,6 @@ func (r *dockerRouter) listPipes(_ libplugin.ConnMetadata) ([]skel.SkelPipe, err
 			ClientUsername:    username,
 			ContainerUsername: c.Labels[labelContainerUsername],
 			Host:              net.JoinHostPort(host, port),
-			DevKeys:           strings.EqualFold(c.Labels[labelDevKeys], "true"),
 		}
 
 		pipes = append(pipes, &pipeWrapper{router: r, pipe: p})
