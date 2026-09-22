@@ -103,3 +103,13 @@ aggrosoft/shopware-cms-extras
 ```
 
 The runtime clones missing repositories only. It never automatically pulls, resets or deletes an existing Git checkout.
+
+
+## Persistent remote development state
+
+The Coolify template persists VS Code Remote and Codex state across container recreates:
+
+- `vscode_server:/var/www/.vscode-server`
+- `codex_home:/var/www/.codex`
+
+This keeps installed remote VS Code extensions and Codex authentication/configuration when the Shopware container is recreated.
