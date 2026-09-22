@@ -11,6 +11,7 @@ The runtime handles development plumbing only:
 - create/use Dockware's SSH user
 - keep an optional SSH password in sync
 - configure the default Git identity
+- provide Shopware CLI as the standard extension validation/build tool
 - configure GitHub App credentials for HTTPS Git operations
 - clone repositories listed in `DEV_PLUGINS` into `custom/plugins`
 - leave existing Git working copies untouched on restart
