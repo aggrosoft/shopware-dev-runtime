@@ -21,6 +21,7 @@ services:
       - --browser
       - chromium
       - --no-sandbox
+      - --isolated
       - --port
       - "8931"
       - --host
