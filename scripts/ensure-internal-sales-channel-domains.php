@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Doctrine\DBAL\Tools\DsnParser;
 use Symfony\Component\Dotenv\Dotenv;
 
 function normalizedBaseUrl(string $url): string
@@ -139,7 +140,11 @@ function ensureInternalSalesChannelDomains(
         throw new RuntimeException('DATABASE_URL is not available.');
     }
 
-    $connection = DriverManager::getConnection(['url' => $databaseUrl]);
+    $dsnParser = new DsnParser([
+        'mysql' => 'pdo_mysql',
+        'mariadb' => 'pdo_mysql',
+    ]);
+    $connection = DriverManager::getConnection($dsnParser->parse($databaseUrl));
     $rows = $connection->fetchAllAssociative(
         'SELECT LOWER(HEX(id)) AS id, url FROM sales_channel_domain ORDER BY url'
     );
