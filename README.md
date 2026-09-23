@@ -19,6 +19,8 @@ The runtime handles development plumbing only:
 
 The existing stock SSHPiper installation remains responsible for external SSH routing and public-key authentication.
 
+The Playwright MCP browser service runs with `--isolated`, so agent sessions use temporary Chromium profiles instead of sharing one persistent profile. This avoids profile-lock conflicts between sequential or concurrent Codex sessions.
+
 ## Runtime image
 
 The GitHub workflow publishes:
