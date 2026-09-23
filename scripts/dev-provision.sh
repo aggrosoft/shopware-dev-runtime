@@ -8,6 +8,51 @@ if ! id developer >/dev/null 2>&1; then
     exit 1
 fi
 
+# Trust only the Coolify reverse proxy for forwarded request metadata.
+# Using Symfony's REMOTE_ADDR shortcut together with X-Forwarded-For would
+# also trust direct requests from other containers on the project network.
+proxy_host="${SHOPWARE_TRUSTED_PROXY_HOST:-coolify-proxy}"
+trusted_proxy_file=/var/www/html/config/packages/z-framework.yaml
+mapfile -t proxy_ips < <(
+    getent ahosts "$proxy_host" 2>/dev/null \
+        | awk '$2 == "STREAM" && !seen[$1]++ { print $1 }'
+)
+
+if (( ${#proxy_ips[@]} > 0 )); then
+    proxy_config_tmp="$(mktemp)"
+
+    {
+        printf '%s\n' 'framework:' '  trusted_proxies:'
+
+        for proxy_ip in "${proxy_ips[@]}"; do
+            printf "    - '%s'\n" "$proxy_ip"
+        done
+
+        printf '%s\n' \
+            '  trusted_headers:' \
+            "    - 'x-forwarded-for'" \
+            "    - 'x-forwarded-proto'" \
+            "    - 'x-forwarded-port'"
+    } >"$proxy_config_tmp"
+
+    if [[ ! -f "$trusted_proxy_file" ]] || ! cmp -s "$proxy_config_tmp" "$trusted_proxy_file"; then
+        sudo install -d -m 0755 "$(dirname "$trusted_proxy_file")"
+        sudo install -m 0644 "$proxy_config_tmp" "$trusted_proxy_file"
+
+        if ! (
+            cd /var/www/html
+            bin/console cache:clear
+        ); then
+            printf '%s\n' 'Warning: Shopware cache clear after trusted proxy configuration failed.' >&2
+        fi
+    fi
+
+    rm -f "$proxy_config_tmp"
+else
+    printf 'Warning: trusted proxy host "%s" could not be resolved; forwarded client IP headers remain untrusted.\n' \
+        "$proxy_host" >&2
+fi
+
 # Persistent remote-development state is mounted here by the Coolify template.
 # Fresh named volumes are root-owned, so make their mount points writable by
 # Dockware's developer user while preserving any existing contents.
