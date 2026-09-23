@@ -71,9 +71,6 @@ services:
       - vscode_server:/var/www/.vscode-server
       - codex_home:/var/www/.codex
 
-    configs:
-      - source: shopware_reverse_proxy
-        target: /var/www/html/config/packages/z-framework.yaml
 
     labels:
       - 'coolify.traefik.middlewares=authentik-forward-auth@file'
@@ -84,16 +81,6 @@ services:
       - 'sshpiper.authorized_keys=${SSH_AUTHORIZED_KEYS_B64:-}'
       - 'sshpiper.docker_exec_cmd=${SSH_AUTHORIZED_KEYS_B64:+true}'
       - 'sshpiper.docker_sshd_cmd=/bin/bash'
-
-
-configs:
-  shopware_reverse_proxy:
-    content: |
-      framework:
-        trusted_proxies: 'REMOTE_ADDR'
-        trusted_headers:
-          - 'x-forwarded-proto'
-          - 'x-forwarded-port'
 
 
 volumes:
