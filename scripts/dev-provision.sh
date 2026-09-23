@@ -240,17 +240,22 @@ if [[ ! "$external_storefront_url" =~ ^https?:// ]]; then
 fi
 
 internal_storefront_origin="${INTERNAL_STOREFRONT_ORIGIN:-http://shop}"
-domain_output="$(
+if domain_output="$(
     php /opt/aggro/ensure-internal-sales-channel-domains.php \
         /var/www/html \
         "$external_storefront_url" \
-        "$internal_storefront_origin"
-)"
-printf '%s\n' "$domain_output"
+        "$internal_storefront_origin" 2>&1
+)"; then
+    printf '%s\n' "$domain_output"
 
-if grep -q '^Added internal sales-channel domain:' <<< "$domain_output"; then
-    (
-        cd /var/www/html
-        bin/console cache:clear
-    )
+    if grep -q '^Added internal sales-channel domain:' <<< "$domain_output"; then
+        if ! (
+            cd /var/www/html
+            bin/console cache:clear
+        ); then
+            printf '%s\n' 'Warning: Shopware cache clear after internal sales-channel domain provisioning failed.' >&2
+        fi
+    fi
+else
+    printf 'Warning: %s\n' "$domain_output" >&2
 fi
