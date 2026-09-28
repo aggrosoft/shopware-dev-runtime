@@ -180,7 +180,12 @@ if [[ -n ${GITHUB_APP_CLIENT_ID:-} \
         /opt/aggro/github-app-credential.sh
 fi
 
-# Clone development repositories listed one owner/repo per line.
+# Clone development repositories listed one per line.
+#
+# Supported forms:
+#   owner/repo                  -> repository default branch
+#   owner/repo@4.x              -> highest stable tag matching the Composer constraint
+#   owner/repo@branch:6.6       -> explicit Git branch
 if [[ -n ${DEV_PLUGINS:-} ]]; then
     if [[ ! -s "$github_dir/client-id" \
         || ! -s "$github_dir/installation-id" \
@@ -194,23 +199,36 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
     plugins_dir=/var/www/html/custom/plugins
     sudo install -d -o developer -g www-data -m 0775 "$plugins_dir"
 
-    while IFS= read -r repo || [[ -n "$repo" ]]; do
-        repo="$(printf '%s' "$repo" | tr -d '\r' | xargs)"
+    while IFS= read -r entry || [[ -n "$entry" ]]; do
+        entry="$(printf '%s' "$entry" | tr -d '\r' | xargs)"
 
-        [[ -z "$repo" ]] && continue
-        [[ "$repo" == \#* ]] && continue
+        [[ -z "$entry" ]] && continue
+        [[ "$entry" == \#* ]] && continue
+
+        repo="$entry"
+        selector=
+
+        if [[ "$entry" == *@* ]]; then
+            repo="${entry%%@*}"
+            selector="${entry#*@}"
+        fi
 
         repo="${repo%.git}"
 
-        if [[ ! "$repo" =~ ^[^/[:space:]]+/[^/[:space:]]+$ ]]; then
-            printf 'Invalid DEV_PLUGINS entry: %s\n' "$repo" >&2
+        if [[ ! "$repo" =~ ^[^/[:space:]@]+/[^/[:space:]@]+$ ]]; then
+            printf 'Invalid DEV_PLUGINS repository: %s\n' "$repo" >&2
+            exit 1
+        fi
+
+        if [[ "$entry" == *@* && -z "$selector" ]]; then
+            printf 'Invalid DEV_PLUGINS selector in entry: %s\n' "$entry" >&2
             exit 1
         fi
 
         url="https://github.com/$repo.git"
         existing=
 
-        # Never pull, reset or otherwise alter an existing working copy.
+        # Never pull, reset, checkout or otherwise alter an existing working copy.
         for plugin_dir in "$plugins_dir"/*; do
             [[ -d "$plugin_dir/.git" ]] || continue
 
@@ -227,16 +245,112 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
         done
 
         if [[ -n "$existing" ]]; then
-            printf 'Dev plugin already present: %s -> %s\n' "$repo" "$existing"
+            printf 'Dev plugin already present: %s -> %s\n' "$entry" "$existing"
             continue
+        fi
+
+        clone_ref=
+        clone_kind=default
+
+        if [[ -n "$selector" ]]; then
+            if [[ "$selector" == branch:* ]]; then
+                clone_ref="${selector#branch:}"
+                clone_kind=branch
+
+                if [[ -z "$clone_ref" ]]; then
+                    printf 'Empty branch selector in DEV_PLUGINS entry: %s\n' "$entry" >&2
+                    exit 1
+                fi
+            else
+                clone_kind=version
+
+                if [[ ! -f /var/www/html/vendor/autoload.php ]]; then
+                    printf 'Cannot resolve version selector "%s" for %s: Shopware Composer autoload is missing.\n' \
+                        "$selector" "$repo" >&2
+                    exit 1
+                fi
+
+                if ! clone_ref="$(
+                    sudo -u developer env HOME=/var/www \
+                        git ls-remote --tags --refs "$url" \
+                        | awk '{ sub("refs/tags/", "", $2); print $2 }' \
+                        | php -r '
+                            require "/var/www/html/vendor/autoload.php";
+
+                            use Composer\\Semver\\Semver;
+                            use Composer\\Semver\\VersionParser;
+
+                            $constraint = $argv[1];
+                            $parser = new VersionParser();
+                            $versions = [];
+
+                            while (($line = fgets(STDIN)) !== false) {
+                                $tag = trim($line);
+                                if ($tag === "") {
+                                    continue;
+                                }
+
+                                try {
+                                    if (VersionParser::parseStability($tag) !== "stable") {
+                                        continue;
+                                    }
+
+                                    $parser->normalize($tag);
+                                    $versions[] = $tag;
+                                } catch (Throwable $e) {
+                                    // Ignore non-semver tags.
+                                }
+                            }
+
+                            try {
+                                $matches = Semver::satisfiedBy($versions, $constraint);
+                            } catch (Throwable $e) {
+                                fwrite(STDERR, "Invalid version constraint: " . $constraint . PHP_EOL);
+                                exit(2);
+                            }
+
+                            if ($matches === []) {
+                                exit(3);
+                            }
+
+                            $matches = Semver::rsort($matches);
+                            echo $matches[0];
+                        ' "$selector"
+                )"; then
+                    printf 'No stable tag matching "%s" found for %s.\n' \
+                        "$selector" "$repo" >&2
+                    exit 1
+                fi
+
+                if [[ -z "$clone_ref" ]]; then
+                    printf 'No stable tag matching "%s" found for %s.\n' \
+                        "$selector" "$repo" >&2
+                    exit 1
+                fi
+            fi
         fi
 
         tmp="$plugins_dir/.aggro-clone-$$-$RANDOM"
         sudo rm -rf "$tmp"
 
-        printf 'Cloning dev plugin: %s\n' "$repo"
-        sudo -u developer env HOME=/var/www \
-            git clone "$url" "$tmp"
+        case "$clone_kind" in
+            default)
+                printf 'Cloning dev plugin: %s (default branch)\n' "$repo"
+                sudo -u developer env HOME=/var/www \
+                    git clone "$url" "$tmp"
+                ;;
+            branch)
+                printf 'Cloning dev plugin: %s (branch %s)\n' "$repo" "$clone_ref"
+                sudo -u developer env HOME=/var/www \
+                    git clone --branch "$clone_ref" --single-branch "$url" "$tmp"
+                ;;
+            version)
+                printf 'Cloning dev plugin: %s (%s -> tag %s)\n' \
+                    "$repo" "$selector" "$clone_ref"
+                sudo -u developer env HOME=/var/www \
+                    git clone --branch "$clone_ref" --single-branch "$url" "$tmp"
+                ;;
+        esac
 
         # Empty repositories keep the repository name. Existing Shopware
         # plugins use the configured plugin class name.
@@ -264,13 +378,13 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
 
         if [[ -e "$target" ]]; then
             printf 'Cannot clone %s: target already exists: %s\n' \
-                "$repo" "$target" >&2
+                "$entry" "$target" >&2
             sudo rm -rf "$tmp"
             exit 1
         fi
 
         sudo -u developer mv "$tmp" "$target"
-        printf 'Dev plugin ready: %s -> %s\n' "$repo" "$target"
+        printf 'Dev plugin ready: %s -> %s\n' "$entry" "$target"
     done <<< "$DEV_PLUGINS"
 fi
 

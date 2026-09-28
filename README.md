@@ -46,7 +46,7 @@ Per Shopware instance:
 |---|---|
 | `SHOPWARE_VERSION` | Dockware/Shopware image tag |
 | `SSH_PASSWORD` | Optional password login when no shared public-key variable is configured |
-| `DEV_PLUGINS` | Optional multiline list of `owner/repo` GitHub repositories |
+| `DEV_PLUGINS` | Optional multiline list of repositories with optional version/branch selectors |
 | `GIT_USER_NAME` | Defaults to `Aggrosoft Dev Server` |
 | `GIT_USER_EMAIL` | Defaults to `dev-server@aggrosoft.de` |
 
@@ -99,14 +99,24 @@ SSH_AUTHORIZED_KEYS_B64={{project.SSH_AUTHORIZED_KEYS_B64}}
 
 Mark `GITHUB_APP_PRIVATE_KEY` as multiline on both the shared variable and the resource variable.
 
-`DEV_PLUGINS` is multiline, for example:
+`DEV_PLUGINS` is multiline. Each line supports one of these forms:
 
 ```text
+# Repository default branch
 aggrosoft/shopware-firewall
-aggrosoft/shopware-cms-extras
+
+# Highest stable Git tag matching a Composer version constraint
+aggrosoft/shopware-cms-extras@4.x
+aggrosoft/another-plugin@^2.3
+
+# Explicit Git branch
+aggrosoft/legacy-plugin@branch:6.6
+aggrosoft/test-plugin@branch:feature/foo
 ```
 
-The runtime clones missing repositories only. It never automatically pulls, resets or deletes an existing Git checkout.
+Version selectors are resolved from remote Git tags with Composer's Semver implementation. Tags with a leading `v` are supported. Pre-release tags are ignored, and provisioning fails if no stable tag matches the requested constraint. There is no fallback to the default branch.
+
+The runtime clones missing repositories only. It never automatically pulls, resets, checks out or deletes an existing Git checkout, even when the configured selector later changes.
 
 
 ## Persistent remote development state
