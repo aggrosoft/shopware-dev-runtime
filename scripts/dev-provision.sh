@@ -363,7 +363,7 @@ if [[ -n ${DEV_PLUGINS:-} ]]; then
                     $class = $json["extra"]["shopware-plugin-class"] ?? "";
 
                     if ($class !== "") {
-                        $parts = explode("\\\\", $class);
+                        $parts = explode("\\", $class);
                         echo end($parts);
                     }
                 ' "$tmp/composer.json" 2>/dev/null || true
