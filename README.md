@@ -54,7 +54,6 @@ Project-shared values:
 
 ```text
 GITHUB_APP_CLIENT_ID
-GITHUB_APP_INSTALLATION_ID
 GITHUB_APP_PRIVATE_KEY
 SSH_AUTHORIZED_KEYS_B64
 ```
@@ -92,12 +91,13 @@ Each Coolify resource should reference the project-shared GitHub values:
 
 ```text
 GITHUB_APP_CLIENT_ID={{project.GITHUB_APP_CLIENT_ID}}
-GITHUB_APP_INSTALLATION_ID={{project.GITHUB_APP_INSTALLATION_ID}}
 GITHUB_APP_PRIVATE_KEY={{project.GITHUB_APP_PRIVATE_KEY}}
 SSH_AUTHORIZED_KEYS_B64={{project.SSH_AUTHORIZED_KEYS_B64}}
 ```
 
 Mark `GITHUB_APP_PRIVATE_KEY` as multiline on both the shared variable and the resource variable.
+
+The runtime resolves the GitHub App installation dynamically for each repository in `DEV_PLUGINS`. The same app can therefore clone repositories from multiple organizations without configuring installation IDs. The app must be installed on each repository owner account and granted access to the repository.
 
 `DEV_PLUGINS` is multiline. Each line supports one of these forms:
 
