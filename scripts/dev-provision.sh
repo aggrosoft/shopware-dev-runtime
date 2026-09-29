@@ -147,11 +147,9 @@ github_dir="$HOME/.config/aggro-github"
 
 # Configure GitHub App authentication if any app setting is present.
 if [[ -n ${GITHUB_APP_CLIENT_ID:-} \
-    || -n ${GITHUB_APP_INSTALLATION_ID:-} \
     || -n ${GITHUB_APP_PRIVATE_KEY:-} ]]; then
 
     : "${GITHUB_APP_CLIENT_ID:?GitHub App configuration requires GITHUB_APP_CLIENT_ID}"
-    : "${GITHUB_APP_INSTALLATION_ID:?GitHub App configuration requires GITHUB_APP_INSTALLATION_ID}"
     : "${GITHUB_APP_PRIVATE_KEY:?GitHub App configuration requires GITHUB_APP_PRIVATE_KEY}"
 
     sudo install -d -o developer -g www-data -m 0700 "$github_dir"
@@ -159,16 +157,17 @@ if [[ -n ${GITHUB_APP_CLIENT_ID:-} \
     printf '%s\n' "$GITHUB_APP_CLIENT_ID" \
         | sudo -u developer tee "$github_dir/client-id" >/dev/null
 
-    printf '%s\n' "$GITHUB_APP_INSTALLATION_ID" \
-        | sudo -u developer tee "$github_dir/installation-id" >/dev/null
-
     printf '%s\n' "$GITHUB_APP_PRIVATE_KEY" \
         | sudo -u developer tee "$github_dir/private-key.pem" >/dev/null
 
     sudo chmod 0600 \
         "$github_dir/client-id" \
-        "$github_dir/installation-id" \
         "$github_dir/private-key.pem"
+
+    # Remove credentials left by runtimes that used one fixed installation ID.
+    sudo rm -f \
+        "$github_dir/installation-id" \
+        "$github_dir/installation-token"
 
     # Keep exactly one GitHub App credential helper across repeated boots.
     sudo -u developer env HOME=/var/www \
@@ -178,6 +177,11 @@ if [[ -n ${GITHUB_APP_CLIENT_ID:-} \
         git config --global --add \
         credential.helper \
         /opt/aggro/github-app-credential.sh
+
+    # Git must pass owner/repository to the credential helper so it can select
+    # the GitHub App installation belonging to that repository.
+    sudo -u developer env HOME=/var/www \
+        git config --global credential.https://github.com.useHttpPath true
 fi
 
 # Clone development repositories listed one per line.
@@ -188,7 +192,6 @@ fi
 #   owner/repo@branch:6.6       -> explicit Git branch
 if [[ -n ${DEV_PLUGINS:-} ]]; then
     if [[ ! -s "$github_dir/client-id" \
-        || ! -s "$github_dir/installation-id" \
         || ! -s "$github_dir/private-key.pem" ]]; then
 
         printf '%s\n' \
