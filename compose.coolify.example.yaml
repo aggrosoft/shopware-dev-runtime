@@ -50,7 +50,7 @@ services:
       SHOP_DOMAIN: '${SERVICE_FQDN_SHOP}'
       INTERNAL_STOREFRONT_ORIGIN: 'http://shop'
 
-      SSH_PASSWORD: '${SSH_PASSWORD:-}'
+      AGGRO_SSH_ENABLED: 'true'
 
       GITHUB_APP_CLIENT_ID: '${GITHUB_APP_CLIENT_ID:-}'
       GITHUB_APP_PRIVATE_KEY: '${GITHUB_APP_PRIVATE_KEY:-}'
@@ -73,13 +73,6 @@ services:
 
     labels:
       - 'coolify.traefik.middlewares=authentik-forward-auth@file'
-      - 'sshpiper.username=${SERVICE_FQDN_SHOP}'
-      - 'sshpiper.container_username=developer'
-      - 'sshpiper.port=22'
-      - 'sshpiper.network=${COMPOSE_PROJECT_NAME}'
-      - 'sshpiper.authorized_keys=${SSH_AUTHORIZED_KEYS_B64:-}'
-      - 'sshpiper.docker_exec_cmd=${SSH_AUTHORIZED_KEYS_B64:+true}'
-      - 'sshpiper.docker_sshd_cmd=/bin/bash'
 
 
 volumes:
