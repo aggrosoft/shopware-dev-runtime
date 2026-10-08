@@ -8,8 +8,6 @@ The repository deliberately does **not** contain Shopware. The Coolify template 
 
 The runtime handles development plumbing only:
 
-- create/use Dockware's SSH user
-- keep an optional SSH password in sync
 - configure the default Git identity
 - provide Shopware CLI as the standard extension validation/build tool
 - mirror public sales-channel domains onto the internal `http://shop` origin for authenticated-gateway-free browser smoke tests
@@ -18,7 +16,7 @@ The runtime handles development plumbing only:
 - clone repositories listed in `DEV_PLUGINS` into `custom/plugins`
 - leave existing Git working copies untouched on restart
 
-The existing stock SSHPiper installation remains responsible for external SSH routing and public-key authentication.
+Remote access is provided by `aggrosoft/coolify-ssh-bridge`. The Compose template enables the resource with `AGGRO_SSH_ENABLED=true`; no per-resource SSH keys or proxy labels are required.
 
 The Playwright MCP browser service runs with `--isolated`, so agent sessions use temporary Chromium profiles instead of sharing one persistent profile. This avoids profile-lock conflicts between sequential or concurrent Codex sessions.
 
@@ -36,7 +34,6 @@ The image is only a carrier for the scripts. A short-lived `runtime` service cop
 
 Use `compose.coolify.example.yaml` as the template.
 
-Important: disable **Escape special characters in labels** for the Coolify service. SSHPiper relies on Coolify/Compose interpolating `${SERVICE_FQDN_SHOP}`, `${COMPOSE_PROJECT_NAME}`, and the shared SSH key variable in the labels.
 
 ## Environment
 
@@ -45,7 +42,6 @@ Per Shopware instance:
 | Variable | Purpose |
 |---|---|
 | `SHOPWARE_VERSION` | Dockware/Shopware image tag |
-| `SSH_PASSWORD` | Optional password login when no shared public-key variable is configured |
 | `DEV_PLUGINS` | Optional multiline list of repositories with optional version/branch selectors |
 | `GIT_USER_NAME` | Defaults to `Aggrosoft Dev Server` |
 | `GIT_USER_EMAIL` | Defaults to `dev-server@aggrosoft.de` |
@@ -55,35 +51,19 @@ Project-shared values:
 ```text
 GITHUB_APP_CLIENT_ID
 GITHUB_APP_PRIVATE_KEY
-SSH_AUTHORIZED_KEYS_B64
 ```
 
 The GitHub private key remains a normal multiline PEM value in Coolify.
 
 ## SSH
 
-The existing stock SSHPiper Docker plugin is used unchanged.
-
-`SSH_AUTHORIZED_KEYS_B64` contains the Base64 representation of a normal OpenSSH `authorized_keys` list. It is referenced only from SSHPiper labels and is not copied into the Shopware container.
-
-When `SSH_AUTHORIZED_KEYS_B64` is set, the stock SSHPiper Docker plugin uses its public-key Docker-exec bridge. When it is empty, password authentication is forwarded to Dockware's SSH server.
-
-Because the stock Docker plugin switches authentication mode when `sshpiper.authorized_keys` is present, password and public-key authentication are not offered simultaneously for the same container. With the shared project variable configured, Shopware DEV instances effectively use public-key access.
-
-Example source text before Base64 encoding:
+The Compose template enables remote access with:
 
 ```text
-ssh-ed25519 AAAA... developer-one
-ssh-ed25519 AAAA... developer-two
+AGGRO_SSH_ENABLED=true
 ```
 
-Generate the single-line project value with:
-
-```bash
-printf '%s\n' 'ssh-ed25519 AAAA... developer-one' 'ssh-ed25519 AAAA... developer-two' | openssl base64 -A
-```
-
-To change the developer keys, update only the project-shared `SSH_AUTHORIZED_KEYS_B64` value.
+`aggrosoft/coolify-ssh-bridge` handles authentication and routing centrally. Do not add SSHPiper labels or per-resource authorized-key variables.
 
 ## GitHub App references
 
@@ -92,7 +72,6 @@ Each Coolify resource should reference the project-shared GitHub values:
 ```text
 GITHUB_APP_CLIENT_ID={{project.GITHUB_APP_CLIENT_ID}}
 GITHUB_APP_PRIVATE_KEY={{project.GITHUB_APP_PRIVATE_KEY}}
-SSH_AUTHORIZED_KEYS_B64={{project.SSH_AUTHORIZED_KEYS_B64}}
 ```
 
 Mark `GITHUB_APP_PRIVATE_KEY` as multiline on both the shared variable and the resource variable.
