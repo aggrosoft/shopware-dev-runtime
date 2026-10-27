@@ -71,7 +71,11 @@ services:
       - codex_home:/var/www/.codex
 
 
+    # Coolify normally routes to this resource's private network, while
+    # dev-provision.sh trusts the proxy IP resolved on the shared coolify network.
+    # Pin Traefik to that same network (requires the predefined network connection).
     labels:
+      - 'traefik.docker.network=coolify'
       - 'coolify.traefik.middlewares=authentik-forward-auth@file'
 
 
