@@ -19,6 +19,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate Coolify Compose proxy network
+        env:
+          SERVICE_URL_SHOP_80: https://shop.example.test:80
+          SERVICE_FQDN_SHOP: shop.example.test
+        run: |
+          docker compose -f compose.coolify.example.yaml config --format json \
+            | jq -e '.services.shop.labels["traefik.docker.network"] == "coolify"'
+
       - name: Validate shell syntax
         run: |
           sh -n install-runtime.sh
