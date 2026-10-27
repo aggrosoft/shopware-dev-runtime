@@ -34,6 +34,16 @@ The image is only a carrier for the scripts. A short-lived `runtime` service cop
 
 Use `compose.coolify.example.yaml` as the template.
 
+### Reverse proxy network (required for HTTPS)
+
+On the application in Coolify, enable **Advanced > Docker Compose > Connect to predefined network** and select the standard `coolify` destination. This is a deployment prerequisite for the template; do not remove the private resource network.
+
+Coolify normally routes Compose traffic over a resource-specific network. The development provisioner resolves `coolify-proxy` and writes its IP address to `/var/www/html/config/packages/z-framework.yaml` for Symfony's trusted-proxy configuration. If Traefik connects over a different network, the request may have a different source IP, so Shopware ignores `X-Forwarded-Proto: https` and generates HTTP asset URLs despite the page being served over HTTPS.
+
+The `shop` service therefore sets `traefik.docker.network=coolify` to match the network whose proxy address the provisioner trusts. Coolify preserves this explicit label instead of generating its default resource-network label. We deliberately keep proxy trust limited to resolved IP addresses; do not replace it with `REMOTE_ADDR` or broad private subnets merely to hide a networking mismatch.
+
+When deploying, inspect **Show Deployable Compose** and confirm that `shop` is attached to `coolify` and retains `traefik.docker.network=coolify`. If using a nonstandard destination network, adapt both the network label and the Coolify predefined-network selection before deploying. Only redeploy a disposable test instance first; existing shops are unaffected until redeployed.
+
 
 ## Environment
 
