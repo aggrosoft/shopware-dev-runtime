@@ -71,10 +71,6 @@ services:
       - codex_home:/var/www/.codex
 
 
-    labels:
-      - 'coolify.traefik.middlewares=authentik-forward-auth@file'
-
-
 volumes:
   dev_runtime:
   shopware_html:
