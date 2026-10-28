@@ -11,7 +11,7 @@ The runtime handles development plumbing only:
 - configure the default Git identity
 - provide Shopware CLI as the standard extension validation/build tool
 - mirror public sales-channel domains onto the internal `http://shop` origin for authenticated-gateway-free browser smoke tests
-- configure Shopware to trust forwarded client metadata only from the Coolify reverse proxy
+- configure Shopware's trusted proxy metadata for dynamic Coolify Docker networks
 - configure GitHub App credentials for HTTPS Git operations
 - clone repositories listed in `DEV_PLUGINS` into `custom/plugins`
 - leave existing Git working copies untouched on restart
@@ -34,16 +34,16 @@ The image is only a carrier for the scripts. A short-lived `runtime` service cop
 
 Use `compose.coolify.example.yaml` as the template.
 
-### Reverse proxy network (required for HTTPS)
 
-On the application in Coolify, enable **Advanced > Docker Compose > Connect to predefined network** and select the standard `coolify` destination. This is a deployment prerequisite for the template; do not remove the private resource network.
+### Reverse proxy and HTTPS in disposable instances
 
-Coolify normally routes Compose traffic over a resource-specific network. The development provisioner resolves `coolify-proxy` and writes its IP address to `/var/www/html/config/packages/z-framework.yaml` for Symfony's trusted-proxy configuration. If Traefik connects over a different network, the request may have a different source IP, so Shopware ignores `X-Forwarded-Proto: https` and generates HTTP asset URLs despite the page being served over HTTPS.
+The Shopware container is routed publicly through Coolify's Traefik proxy, and the example Compose deliberately publishes **no direct host port** for the shop. Coolify can connect Traefik over a resource-specific Docker network, even if resolving the hostname `coolify-proxy` from inside Shopware returns its address on the shared network. The two source addresses need not match.
 
-The `shop` service therefore sets `traefik.docker.network=coolify` to match the network whose proxy address the provisioner trusts. Coolify preserves this explicit label instead of generating its default resource-network label. We deliberately keep proxy trust limited to resolved IP addresses; do not replace it with `REMOTE_ADDR` or broad private subnets merely to hide a networking mismatch.
+During startup, `dev-provision.sh` therefore generates `/var/www/html/config/packages/z-framework.yaml` using Symfony's documented `trusted_proxies: '127.0.0.1,REMOTE_ADDR'` shortcut and retains the existing `x-forwarded-for`, `x-forwarded-proto`, and `x-forwarded-port` headers. `REMOTE_ADDR` trusts the actual immediate HTTP peer, regardless of the Docker interface. This prevents Shopware from misidentifying HTTPS requests as HTTP and emitting mixed-content asset URLs. The file is updated and Shopware's cache is cleared only if its content changed.
 
-When deploying, inspect **Show Deployable Compose** and confirm that `shop` is attached to `coolify` and retains `traefik.docker.network=coolify`. If using a nonstandard destination network, adapt both the network label and the Coolify predefined-network selection before deploying. Only redeploy a disposable test instance first; existing shops are unaffected until redeployed.
+**Security boundary:** This is appropriate only for disposable development instances where all direct peers (including other containers on the private Docker network) are trusted. Every direct peer can supply trusted `X-Forwarded-*` headers. Do **not** publish the shop's HTTP port to untrusted clients or copy this proxy policy into production; production environments should explicitly trust known proxy addresses or network ranges. The public authentication middleware remains independent of this setting.
 
+No special shared-network connection, `traefik.docker.network` override, or Compose edits are needed for this HTTPS fix.
 
 ## Environment
 
